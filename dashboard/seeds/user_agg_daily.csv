@@ -1,0 +1,25 @@
+user_id,date,user_name,orders_last_30d,gmv_last_30d,return_rate_last_30d,return_cost_last_30d,avg_items_per_order,lifetime_orders,lifetime_return_rate,contribution_margin_last_30d,segment_label,primary_device
+U001,2026-03-28,Alicja K.,5,1420,0.80,430,2.6,12,0.67,-92,toxic,mobile
+U002,2026-03-28,Beata M.,3,680,0.33,90,2.0,10,0.41,44,tryers,mobile
+U003,2026-03-28,Celina P.,4,1180,0.10,18,1.3,11,0.14,208,high_value,desktop
+U004,2026-03-28,Daria L.,3,910,0.15,30,1.3,9,0.18,146,high_value,desktop
+U005,2026-03-28,Ewa R.,3,640,0.67,220,2.3,8,0.51,-28,toxic,mobile
+U006,2026-03-28,Filip T.,2,320,0.40,44,1.8,5,0.32,20,tryers,mobile
+U007,2026-03-28,Gosia B.,1,120,0.00,0,1.0,4,0.18,26,low_value,desktop
+U008,2026-03-28,Hanna N.,1,170,0.00,0,1.0,5,0.21,28,low_value,mobile
+U009,2026-03-28,Iza S.,2,540,0.25,60,1.5,7,0.26,68,tryers,desktop
+U010,2026-03-28,Julia F.,1,100,0.00,0,1.0,3,0.10,22,low_value,mobile
+U011,2026-03-28,Karolina D.,1,140,0.00,0,1.0,2,0.12,30,low_value,mobile
+U012,2026-03-28,Lena W.,1,150,0.00,0,1.0,4,0.09,24,low_value,desktop
+U001,2026-04-27,Alicja K.,6,1680,0.83,450,2.8,18,0.72,-108,toxic,mobile
+U002,2026-04-27,Beata M.,5,1480,0.80,210,2.6,16,0.69,-96,toxic,mobile
+U003,2026-04-27,Celina P.,4,1320,0.08,20,1.3,15,0.13,238,high_value,desktop
+U004,2026-04-27,Daria L.,3,980,0.12,25,1.2,12,0.16,165,high_value,desktop
+U005,2026-04-27,Ewa R.,2,420,0.50,80,2.1,10,0.48,18,tryers,mobile
+U006,2026-04-27,Filip T.,2,360,0.40,50,1.8,7,0.35,22,tryers,mobile
+U007,2026-04-27,Gosia B.,1,140,0.00,0,1.0,5,0.16,31,low_value,desktop
+U008,2026-04-27,Hanna N.,1,180,0.20,18,1.0,6,0.22,18,low_value,mobile
+U009,2026-04-27,Iza S.,5,1100,0.15,30,1.4,12,0.22,168,high_value,desktop
+U010,2026-04-27,Julia F.,1,110,0.00,0,1.0,4,0.09,24,low_value,mobile
+U011,2026-04-27,Karolina D.,2,300,0.33,35,1.5,4,0.18,16,tryers,mobile
+U012,2026-04-27,Lena W.,1,160,0.10,10,1.0,5,0.11,20,low_value,desktop

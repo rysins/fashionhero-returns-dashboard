@@ -1,0 +1,13 @@
+product_id,seller_id,date,product_name,category,views,orders,return_rate,conversion_rate,avg_price,product_segment
+P001,S001,2026-03-28,Cloud Runner,shoes,4800,96,0.18,0.020,479,golden
+P002,S006,2026-03-28,Drop Runner,shoes,3500,51,0.49,0.015,449,high_return
+P003,S007,2026-03-28,Occasion Dress A,dresses,2900,44,0.44,0.015,389,high_return
+P004,S004,2026-03-28,Reczne Baleriny,handmade_shoes,1300,24,0.08,0.018,429,golden
+P005,S005,2026-03-28,Organic Tee,basics,2400,63,0.14,0.026,199,steady
+P006,S002,2026-03-28,Wrap Dress,dresses,2100,28,0.31,0.013,499,watch
+P001,S001,2026-04-27,Cloud Runner,shoes,5200,110,0.16,0.021,479,golden
+P002,S006,2026-04-27,Drop Runner,shoes,4100,58,0.54,0.014,449,high_return
+P003,S007,2026-04-27,Occasion Dress A,dresses,3600,50,0.52,0.014,389,high_return
+P004,S004,2026-04-27,Reczne Baleriny,handmade_shoes,1500,27,0.09,0.018,429,golden
+P005,S005,2026-04-27,Organic Tee,basics,2700,68,0.12,0.025,199,steady
+P006,S002,2026-04-27,Wrap Dress,dresses,2500,31,0.34,0.012,499,watch

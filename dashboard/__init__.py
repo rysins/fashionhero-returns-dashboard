@@ -1,0 +1,1 @@
+"""FashionHero Streamlit dashboard package."""

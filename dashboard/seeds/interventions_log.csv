@@ -1,0 +1,4 @@
+intervention_id,type,target_type,target_id,start_date,end_date,parameters
+I001,ranking_change,user,toxic_top_10pct,2026-04-10,2026-04-24,"warning banner before checkout for heavy returners"
+I002,commission_increase,seller,S007,2026-04-12,,"+3pp commission pilot for risky seller cohort"
+I003,content_enrichment,product,P003,2026-04-18,,"size guide and richer PDP copy"

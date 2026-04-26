@@ -89,4 +89,37 @@ Zbudować nową aplikację `Next.js` w tym repo jako wierną wizualnie kopię ob
 - 2026-04-26: local verification completed with `npm run test` and `npm run build`.
 - 2026-04-27: repository pushed to GitHub at `origin/main` and ready for Vercel import.
 - 2026-04-27: `Next.js` upgraded to `15.2.8` after Vercel reported a security advisory on the earlier `15.2.x` build.
-- Next step: import the GitHub repository into Vercel, keep `main` as the primary branch and use branch previews for review.
+- 2026-04-27: added a separate `dashboard/` workstream for the Streamlit MVP focused on margin, return-rate diagnosis and heuristic simulation.
+- 2026-04-27: implemented the `Streamlit` MVP with mock CSV datasets, SQL-ready dataset specs, explicit segmentation logic and a heuristic top-returner simulation.
+- 2026-04-27: local verification completed for the dashboard through `python -m dashboard.validate_dashboard` and a successful `streamlit run dashboard/app.py`.
+- 2026-04-27: migrated dashboard runtime data to SQLite and added deterministic synthetic user transaction generation consistent with the seeded mock datasets.
+- Next step: deploy the Streamlit dashboard from `dashboard/app.py` to Streamlit Community Cloud and keep the storefront on Vercel.
+
+## Dashboard MVP Plan
+
+### Summary
+- Add a separate Streamlit module in this repo for an internal margin-and-returns dashboard.
+- Keep the current `Next.js` storefront unchanged.
+- Run the dashboard on SQLite with SQL-ready dataset specs and a heuristic intervention simulator.
+
+### MVP Scope
+- Overview: GMV, return rate, margin, contribution per order, health badges.
+- Toxic segment card: concentrated loss driver framed for decision-making.
+- User segments: scatter by return rate and GMV.
+- Seller segments: ranked impact table with risk labels.
+- Simulation: top-returner intervention with estimated margin and GMV deltas.
+- Tracking readiness: daily snapshots and intervention log to support future migration analysis.
+
+### Dataset Contracts
+- SQLite tables:
+  - `orders_fact`
+  - `user_agg_daily`
+  - `seller_agg_daily`
+  - `product_agg_daily`
+  - `interventions_log`
+- Seed CSV fixtures remain in repo only to rebuild the database deterministically.
+
+### Deployment Notes
+- Streamlit entrypoint: `dashboard/app.py`
+- Dependency file: `dashboard/requirements.txt`
+- Sharing mode: internal demo/share link on Streamlit Community Cloud
