@@ -87,4 +87,6 @@ Zbudować nową aplikację `Next.js` w tym repo jako wierną wizualnie kopię ob
 ## Status
 - 2026-04-26: v1 storefront implemented in `Next.js` with local mock data, local assets, wishlist/cart state in `localStorage`, and the required public routes.
 - 2026-04-26: local verification completed with `npm run test` and `npm run build`.
-- Next step: connect the repository to GitHub and import it into Vercel so `main` and branch previews can be shared.
+- 2026-04-27: repository pushed to GitHub at `origin/main` and ready for Vercel import.
+- 2026-04-27: `Next.js` upgraded to `15.2.8` after Vercel reported a security advisory on the earlier `15.2.x` build.
+- Next step: import the GitHub repository into Vercel, keep `main` as the primary branch and use branch previews for review.
