@@ -93,6 +93,7 @@ Zbudować nową aplikację `Next.js` w tym repo jako wierną wizualnie kopię ob
 - 2026-04-27: implemented the `Streamlit` MVP with mock CSV datasets, SQL-ready dataset specs, explicit segmentation logic and a heuristic top-returner simulation.
 - 2026-04-27: local verification completed for the dashboard through `python -m dashboard.validate_dashboard` and a successful `streamlit run dashboard/app.py`.
 - 2026-04-27: migrated dashboard runtime data to SQLite and added deterministic synthetic user transaction generation consistent with the seeded mock datasets.
+- 2026-04-27: fixed Streamlit Community Cloud startup by bootstrapping repo root into `sys.path` in `dashboard/app.py`, so absolute imports like `from dashboard...` resolve when the app is launched as `dashboard/app.py`.
 - Next step: deploy the Streamlit dashboard from `dashboard/app.py` to Streamlit Community Cloud and keep the storefront on Vercel.
 
 ## Dashboard MVP Plan

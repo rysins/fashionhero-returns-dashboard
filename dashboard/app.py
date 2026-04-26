@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+import sys
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from dashboard.config import (
     SELLER_SEGMENT_COLORS,
