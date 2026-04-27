@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { ProductCard } from "@/components/store/product-card";
+import { useStore } from "@/components/store/store-provider";
+import { rankProductsForScenario } from "@/lib/data/selectors";
 import { Product } from "@/lib/data/types";
 
 type Tab = "new" | "best";
@@ -15,7 +17,8 @@ export function FavoritesSection({
   bestSellers: Product[];
 }) {
   const [tab, setTab] = useState<Tab>("new");
-  const products = tab === "new" ? newArrivals : bestSellers;
+  const { scenario } = useStore();
+  const products = rankProductsForScenario(tab === "new" ? newArrivals : bestSellers, scenario);
 
   return (
     <section className="py-12">
@@ -39,6 +42,11 @@ export function FavoritesSection({
         </button>
       </div>
       <div className="relative px-4 md:px-8 lg:px-12">
+        {scenario.promoteLowReturnProductsEnabled ? (
+          <p className="mb-4 text-center text-xs uppercase tracking-[0.5px] text-[#2f7d4a]">
+            Preview: products with low return risk are pushed higher in this rail.
+          </p>
+        ) : null}
         <div className="scrollbar-hide flex gap-4 overflow-x-auto pb-2">
           {products.map((product) => (
             <ProductCard key={product.slug} product={product} />

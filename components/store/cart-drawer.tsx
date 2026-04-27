@@ -4,10 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { useStore } from "@/components/store/store-provider";
+import { getSoftPenaltyEligibility } from "@/lib/data/preview-data";
 import { getProductBySlug } from "@/lib/data/selectors";
 
 export function CartDrawer() {
-  const { cart, isCartOpen, closeCart, removeFromCart } = useStore();
+  const { cart, isCartOpen, closeCart, removeFromCart, scenario } = useStore();
+  const softPenalty = getSoftPenaltyEligibility(scenario);
 
   return (
     <>
@@ -29,7 +31,11 @@ export function CartDrawer() {
           </button>
         </div>
         <div className="bg-cream-light px-4 py-3 text-center">
-          <p className="text-xs text-warm-gray">Spend 299 zl more to earn free shipping!</p>
+          <p className="text-xs text-warm-gray">
+            {softPenalty.qualifies
+              ? "Preview: this shopper would pay the return shipment cost on future returns."
+              : "Spend 299 zl more to earn free shipping!"}
+          </p>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {cart.length === 0 ? (

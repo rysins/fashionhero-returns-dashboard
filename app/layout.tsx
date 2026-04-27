@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { Footer } from "@/components/store/footer";
 import { Header } from "@/components/store/header";
+import { ScenarioPanel } from "@/components/store/scenario-panel";
 import { StoreProvider } from "@/components/store/store-provider";
 
 import "./globals.css";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <Footer />
             <CartDrawer />
+            <ScenarioPanel />
           </div>
         </StoreProvider>
       </body>

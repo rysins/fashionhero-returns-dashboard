@@ -1,5 +1,6 @@
 import { collections, products, sellers } from "@/lib/data/mock-data";
-import { Collection, Product } from "@/lib/data/types";
+import { getProductAnalytics, getSellerAnalytics } from "@/lib/data/preview-data";
+import { Collection, Product, ScenarioParameters, Seller } from "@/lib/data/types";
 
 export type ProductFilters = {
   gender?: string;
@@ -28,16 +29,18 @@ export function getProductsForCollection(slug: string) {
   return products.filter((product) => product.collectionSlugs.includes(slug));
 }
 
-export function getRecommendedProducts(product: Product, limit = 4) {
-  return products
-    .filter((candidate) => candidate.slug !== product.slug)
-    .filter(
-      (candidate) =>
-        candidate.sellerId === product.sellerId ||
-        candidate.productType === product.productType ||
-        candidate.collectionSlugs.some((slug) => product.collectionSlugs.includes(slug)),
-    )
-    .slice(0, limit);
+export function getRecommendedProducts(product: Product, limit = 4, scenario?: ScenarioParameters) {
+  return rankProductsForScenario(
+    products
+      .filter((candidate) => candidate.slug !== product.slug)
+      .filter(
+        (candidate) =>
+          candidate.sellerId === product.sellerId ||
+          candidate.productType === product.productType ||
+          candidate.collectionSlugs.some((slug) => product.collectionSlugs.includes(slug)),
+      ),
+    scenario,
+  ).slice(0, limit);
 }
 
 export function filterProducts(items: Product[], filters: ProductFilters) {
@@ -100,6 +103,20 @@ export function sortProducts(items: Product[], sort: SortOption) {
   }
 }
 
+export function rankProductsForScenario(items: Product[], scenario?: ScenarioParameters) {
+  if (!scenario?.promoteLowReturnProductsEnabled) {
+    return sortProducts(items, "featured");
+  }
+
+  return [...items].sort((left, right) => {
+    const leftSeller = getSellerById(left.sellerId);
+    const rightSeller = getSellerById(right.sellerId);
+    const leftAnalytics = getProductAnalytics(left, leftSeller);
+    const rightAnalytics = getProductAnalytics(right, rightSeller);
+    return rightAnalytics.promotionScore - leftAnalytics.promotionScore || left.featuredOrder - right.featuredOrder;
+  });
+}
+
 export function getFilterOptions(items: Product[]) {
   return {
     genders: ["All", ...new Set(items.map((item) => item.gender))],
@@ -108,4 +125,28 @@ export function getFilterOptions(items: Product[]) {
     materials: [...new Set(items.map((item) => item.material))],
     sellers: sellers.filter((seller) => items.some((item) => item.sellerId === seller.id)),
   };
+}
+
+export function getScenarioProductCallout(product: Product, scenario?: ScenarioParameters) {
+  const seller = getSellerById(product.sellerId);
+  const analytics = getProductAnalytics(product, seller);
+
+  if (scenario?.promoteLowReturnProductsEnabled && analytics.health === "healthy") {
+    return "Low-return product boosted in preview ranking";
+  }
+  if (analytics.health === "critical") {
+    return "High return-risk item";
+  }
+  return null;
+}
+
+export function getScenarioSellerBadge(seller: Seller | undefined, scenario?: ScenarioParameters) {
+  if (!seller) {
+    return null;
+  }
+  const analytics = getSellerAnalytics(seller);
+  if (scenario?.dynamicCommissionEnabled && analytics.risk === "risky") {
+    return `Preview commission ${Math.round((analytics.effectiveCommissionRate + 0.03) * 100)}%`;
+  }
+  return `Base commission ${Math.round(analytics.effectiveCommissionRate * 100)}%`;
 }

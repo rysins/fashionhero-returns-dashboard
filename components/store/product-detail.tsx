@@ -2,26 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/store/product-card";
 import { useStore } from "@/components/store/store-provider";
-import { getSellerById } from "@/lib/data/selectors";
+import { getSoftPenaltyEligibility, getProductAnalytics, getSellerAnalytics } from "@/lib/data/preview-data";
+import { getRecommendedProducts, getScenarioSellerBadge, getSellerById } from "@/lib/data/selectors";
 import { Product } from "@/lib/data/types";
 
 export function ProductDetail({
   product,
-  recommendations,
 }: {
   product: Product;
-  recommendations: Product[];
 }) {
   const seller = getSellerById(product.sellerId);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState(product.variants[0]?.sizes[0] ?? "");
-  const { addToCart, isWishlisted, toggleWishlist } = useStore();
+  const { addToCart, isWishlisted, toggleWishlist, scenario } = useStore();
 
   const selectedVariant = product.variants[selectedVariantIndex];
+  const sellerAnalytics = seller ? getSellerAnalytics(seller) : null;
+  const productAnalytics = getProductAnalytics(product, seller);
+  const softPenalty = getSoftPenaltyEligibility(scenario);
+  const recommendations = useMemo(() => getRecommendedProducts(product, 4, scenario), [product, scenario]);
 
   return (
     <main className="px-4 py-8 md:px-8 lg:px-12">
@@ -71,6 +74,10 @@ export function ProductDetail({
               Sold by <span className="text-charcoal">{seller?.name ?? "Seller"}</span>
               {seller?.isPro ? <span className="ml-1 rounded bg-charcoal/10 px-1 py-0.5 text-[9px] uppercase tracking-wide text-charcoal/70">Pro</span> : null}
             </p>
+            <p className="mb-2 text-xs uppercase tracking-[0.5px] text-warm-gray">
+              {getScenarioSellerBadge(seller, scenario)}
+              {sellerAnalytics ? ` • seller return rate ${Math.round(sellerAnalytics.returnRate * 100)}%` : null}
+            </p>
             <p className="text-2xl font-medium">{product.price} zl</p>
           </div>
 
@@ -78,7 +85,20 @@ export function ProductDetail({
             <p className="mb-3 text-sm text-charcoal">{product.stockStatus}</p>
             <p className="text-sm text-warm-gray">Free Shipping on Orders over 299 zl</p>
             <p className="mt-1 text-sm text-warm-gray">Estimated delivery: Apr 28 - Apr 30</p>
-            <p className="mt-1 text-sm text-warm-gray">Easy Returns</p>
+            <p className="mt-1 text-sm text-warm-gray">
+              {softPenalty.qualifies
+                ? "Preview policy: return shipping is charged after the second returned order this quarter."
+                : "Easy Returns"}
+            </p>
+            <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.5px] ${
+              productAnalytics.health === "healthy"
+                ? "bg-[#e7f5ec] text-[#2f7d4a]"
+                : productAnalytics.health === "warning"
+                  ? "bg-[#fff3df] text-[#b26b00]"
+                  : "bg-[#fde8e8] text-[#9e4040]"
+            }`}>
+              {productAnalytics.health} return-risk profile
+            </p>
           </div>
 
           <div className="mb-6">
@@ -159,6 +179,14 @@ export function ProductDetail({
               <h2 className="mb-2 text-lg font-medium text-charcoal">Care</h2>
               <p>{product.care}</p>
             </section>
+            {scenario.promoteLowReturnProductsEnabled ? (
+              <section className="rounded-[24px] border border-black/5 bg-cream-light p-5">
+                <h2 className="mb-2 text-lg font-medium text-charcoal">Preview decision layer</h2>
+                <p>
+                  This product is currently scored at {productAnalytics.promotionScore.toFixed(1)} in the low-return promotion model and can be moved higher in ranking if the scenario remains enabled.
+                </p>
+              </section>
+            ) : null}
           </div>
         </div>
       </section>

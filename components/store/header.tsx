@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useStore } from "@/components/store/store-provider";
+import { getSoftPenaltyEligibility } from "@/lib/data/preview-data";
 import { AccountIcon, BagIcon, HeartIcon, MenuIcon, SearchIcon } from "@/components/store/icons";
 
 const navLinks = [
@@ -15,13 +16,21 @@ const navLinks = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { cart, wishlist, openCart } = useStore();
+  const { cart, wishlist, openCart, scenario } = useStore();
+  const eligibility = getSoftPenaltyEligibility(scenario);
+  const previewFlags = [
+    scenario.softPenaltyEnabled && "soft penalty",
+    scenario.dynamicCommissionEnabled && "dynamic commission",
+    scenario.promoteLowReturnProductsEnabled && "product promotion",
+  ].filter(Boolean);
 
   return (
     <>
       <div className="bg-charcoal text-center text-white">
         <p className="mx-auto h-9 max-w-layout px-4 text-[11px] font-medium leading-9 tracking-wide">
-          Free Shipping on Orders over 299 zl - Easy Returns.
+          {previewFlags.length > 0
+            ? `Preview active: ${previewFlags.join(", ")}${eligibility.qualifies ? " - selected buyer pays return shipping." : "."}`
+            : "Free Shipping on Orders over 299 zl - Easy Returns."}
         </p>
       </div>
       <header className="sticky top-0 z-40 border-b border-black/5 bg-white/95 backdrop-blur">

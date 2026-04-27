@@ -1,12 +1,16 @@
--- Log of business changes. This is the minimum event contract required to
--- connect future segment migrations and KPI deltas to what the team changed.
+-- Log of changes and preview rules used to connect observed segment movement to interventions.
 
 create table if not exists analytics.interventions_log (
     intervention_id text primary key,
-    type text not null,           -- e.g. ranking_change, commission_increase
-    target_type text not null,    -- user, seller, product
+    type text not null,
+    target_type text not null,
     target_id text not null,
     start_date date not null,
     end_date date,
-    parameters text not null
+    parameters text not null,
+    intervention_code text not null,
+    version integer not null default 1,
+    status text not null,
+    eligibility_rule text not null,
+    parameter_json text not null
 );

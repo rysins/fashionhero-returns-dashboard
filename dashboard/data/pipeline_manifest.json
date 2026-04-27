@@ -1,0 +1,15 @@
+{
+  "snapshot_date": "2026-04-27",
+  "source_dir": "/Users/marcin/Documents/Codex_projects/FashionHero/dashboard/seeds",
+  "validation_status": "passed",
+  "record_counts": {
+    "orders_fact": 108,
+    "user_agg_daily": 24,
+    "seller_agg_daily": 16,
+    "product_agg_daily": 12,
+    "category_agg_daily": 13,
+    "interventions_log": 3,
+    "scenario_outputs_daily": 6
+  },
+  "rejected_records": 0
+}

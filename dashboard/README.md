@@ -1,17 +1,18 @@
 # FashionHero Margin Dashboard
 
-Streamlit MVP for diagnosing margin erosion, toxic return segments and likely impact of simple interventions.
+Streamlit dashboard focused on margin leakage, return-risk segments and preview interventions for FashionHero.
 
-## Files
+## Runtime shape
 
-- `app.py` - Streamlit entrypoint
-- `build_database.py` - SQLite builder and synthetic transaction generator
-- `config.py` - thresholds, labels and visual constants
-- `loaders.py` - SQLite loaders and schema validation
-- `logic.py` - segmentation, summaries, migrations and simulation
-- `data/` - SQLite runtime database
-- `seeds/` - source CSV fixtures used to rebuild the database
-- `sql/` - SQL-ready specs for future real-data integration
+- `app.py` - Streamlit business dashboard v2
+- `pipeline.py` - CSV ingest, normalization, aggregate building and SQLite publishing
+- `build_database.py` - compatibility wrapper for local rebuilds
+- `loaders.py` - runtime DB loaders with schema validation
+- `logic.py` - metrics, drill-downs, migrations and intervention simulations
+- `data/fashionhero_dashboard.sqlite` - runtime database consumed by Streamlit
+- `data/pipeline_manifest.json` - latest pipeline run manifest
+- `seeds/` - CSV export fixtures used as the current source adapter
+- `sql/` - SQL-ready contracts for future warehouse integration
 
 ## Local run
 
@@ -19,24 +20,43 @@ From the repository root:
 
 ```bash
 pip install -r dashboard/requirements.txt
-python -m dashboard.build_database
-streamlit run dashboard/app.py
+python -m dashboard.pipeline
 python -m dashboard.validate_dashboard
+streamlit run dashboard/app.py
 ```
 
 ## Streamlit Community Cloud
 
-- Repository: this repo
-- Branch: `main`
+- Repository root: this repo
 - Entry point: `dashboard/app.py`
 - Dependency file: `dashboard/requirements.txt`
 
-Configure the app from the repository root and point Streamlit Community Cloud to `dashboard/app.py`.
+The app reads only from the generated SQLite runtime database. It does not require secrets for the current mock/CSV-based phase.
 
-## Model assumptions
+## Daily refresh
 
-- Runtime data source is SQLite. Seed CSVs are kept only to rebuild the database deterministically.
-- Synthetic orders expand transaction-level test coverage while staying consistent with seeded user and seller profiles.
-- Data is mock-first and meant to sell the decision problem before real data is connected.
-- Thresholds are explicit in `config.py` and are not hardcoded in visual components.
-- Simulation output is heuristic and should be treated as directional, not forecast-grade.
+- Workflow: `.github/workflows/dashboard-refresh.yml`
+- Triggers:
+  - scheduled daily run
+  - manual `workflow_dispatch`
+- Output:
+  - rebuilt `dashboard/data/fashionhero_dashboard.sqlite`
+  - rebuilt `dashboard/data/pipeline_manifest.json`
+
+## Real exports
+
+The operational runbook for replacing demo seeds with real FashionHero exports is documented in [REAL_EXPORTS.md](/Users/marcin/Documents/Codex_projects/FashionHero/dashboard/REAL_EXPORTS.md).
+
+Short version:
+
+1. prepare five CSV files with the expected names and columns,
+2. place them in a dedicated source directory such as `dashboard/imports/live/`,
+3. run `run_pipeline(source_dir=Path("dashboard/imports/live"))`,
+4. validate with `python -m dashboard.validate_dashboard`,
+5. publish the rebuilt SQLite database and manifest.
+
+## Current assumptions
+
+- First real pipeline version is `CSV export -> normalize -> aggregate -> publish SQLite`
+- Streamlit stays read-only against the published runtime DB
+- Scenario outputs are heuristic estimates and should be treated as directional decision support

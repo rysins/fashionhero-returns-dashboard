@@ -5,12 +5,16 @@ import Link from "next/link";
 
 import { HeartIcon } from "@/components/store/icons";
 import { useStore } from "@/components/store/store-provider";
-import { getSellerById } from "@/lib/data/selectors";
+import { getProductAnalytics, getSellerAnalytics } from "@/lib/data/preview-data";
+import { getScenarioProductCallout, getScenarioSellerBadge, getSellerById } from "@/lib/data/selectors";
 import { Product } from "@/lib/data/types";
 
 export function ProductCard({ product }: { product: Product }) {
-  const { isWishlisted, toggleWishlist } = useStore();
+  const { isWishlisted, toggleWishlist, scenario } = useStore();
   const seller = getSellerById(product.sellerId);
+  const productAnalytics = getProductAnalytics(product, seller);
+  const sellerAnalytics = seller ? getSellerAnalytics(seller) : null;
+  const callout = getScenarioProductCallout(product, scenario);
   const variant = product.variants[0];
   const wishlisted = isWishlisted(product.slug);
 
@@ -22,6 +26,11 @@ export function ProductCard({ product }: { product: Product }) {
             {product.badge ? (
               <span className="absolute left-3 top-3 z-10 bg-white/90 px-2 py-1 text-[10px] font-medium uppercase tracking-wider">
                 {product.badge}
+              </span>
+            ) : null}
+            {callout ? (
+              <span className="absolute bottom-3 left-3 z-10 rounded-full bg-charcoal/85 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-white">
+                {callout}
               </span>
             ) : null}
             <Image
@@ -58,6 +67,10 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           ) : null}
         </p>
+        <p className="mb-1 text-[11px] text-warm-gray/70">
+          {getScenarioSellerBadge(seller, scenario)}
+          {sellerAnalytics ? ` • returns ${Math.round(sellerAnalytics.returnRate * 100)}%` : null}
+        </p>
       </Link>
 
       <div className="mb-1.5 flex gap-1.5">
@@ -72,6 +85,15 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
       <div className="flex items-center gap-2">
         <span className="text-[14px] font-medium">{product.price} zl</span>
+        <span className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.5px] ${
+          productAnalytics.health === "healthy"
+            ? "bg-[#e7f5ec] text-[#2f7d4a]"
+            : productAnalytics.health === "warning"
+              ? "bg-[#fff3df] text-[#b26b00]"
+              : "bg-[#fde8e8] text-[#9e4040]"
+        }`}>
+          {productAnalytics.health}
+        </span>
       </div>
     </div>
   );

@@ -5,14 +5,17 @@ import math
 import pandas as pd
 
 from dashboard.config import (
+    CATEGORY_THRESHOLDS,
+    INTERVENTION_CONFIG,
     SELLER_THRESHOLDS,
     USER_SEGMENT_ORDER,
     USER_THRESHOLDS,
+    category_health_badge,
 )
 
 
 def get_available_snapshot_dates(dataframe: pd.DataFrame) -> list:
-    return sorted(dataframe["date"].unique())
+    return sorted(dataframe["date"].dropna().unique())
 
 
 def select_snapshot(dataframe: pd.DataFrame, snapshot_date) -> pd.DataFrame:
@@ -28,7 +31,7 @@ def previous_snapshot(dataframe: pd.DataFrame, snapshot_date) -> pd.DataFrame:
 
 
 def margin_per_order(dataframe: pd.DataFrame, margin_column: str, orders_column: str) -> pd.Series:
-    return dataframe[margin_column] / dataframe[orders_column].replace(0, pd.NA)
+    return (dataframe[margin_column] / dataframe[orders_column].replace(0, pd.NA)).fillna(0)
 
 
 def assign_user_segment(row: pd.Series) -> str:
@@ -76,19 +79,28 @@ def enrich_segments(users_df: pd.DataFrame, sellers_df: pd.DataFrame) -> tuple[p
     return users, sellers
 
 
-def overview_metrics(sellers_df: pd.DataFrame) -> dict[str, float]:
+def overview_metrics(
+    sellers_df: pd.DataFrame,
+    categories_df: pd.DataFrame,
+    scenario_outputs_df: pd.DataFrame,
+) -> dict[str, float]:
     total_gmv = float(sellers_df["gmv_last_30d"].sum())
     total_margin = float(sellers_df["margin_contribution"].sum())
     total_orders = float(sellers_df["orders_count"].sum())
     weighted_return_rate = float(
         (sellers_df["return_rate_last_30d"] * sellers_df["orders_count"]).sum() / max(total_orders, 1)
     )
+    top_risk = categories_df.sort_values(["margin_contribution", "return_rate_last_30d"]).iloc[0]
+    projected_margin = scenario_outputs_df["delta_margin"].sum()
     return {
         "gmv": total_gmv,
         "margin": total_margin,
         "orders": total_orders,
         "return_rate": weighted_return_rate,
         "contribution_per_order": total_margin / max(total_orders, 1),
+        "highest_risk_category_margin": float(top_risk["margin_contribution"]),
+        "highest_risk_category_name": str(top_risk["category_name"]),
+        "projected_margin_headroom": float(projected_margin),
     }
 
 
@@ -114,23 +126,8 @@ def segment_summary(users_df: pd.DataFrame) -> pd.DataFrame:
             margin_per_order=lambda df: (df["margin"] / df["orders"]).round(1),
         )
     )
-
-    grouped["segment_label"] = pd.Categorical(
-        grouped["segment_label"], categories=USER_SEGMENT_ORDER, ordered=True
-    )
-    grouped = grouped.sort_values("segment_label").reset_index(drop=True)
-
-    return grouped[
-        [
-            "segment_label",
-            "users_pct",
-            "gmv_pct",
-            "return_cost_pct",
-            "return_rate",
-            "margin",
-            "margin_per_order",
-        ]
-    ]
+    grouped["segment_label"] = pd.Categorical(grouped["segment_label"], categories=USER_SEGMENT_ORDER, ordered=True)
+    return grouped.sort_values("segment_label").reset_index(drop=True)
 
 
 def toxic_card(users_df: pd.DataFrame) -> dict[str, float]:
@@ -156,15 +153,12 @@ def migration_summary(previous_df: pd.DataFrame, current_df: pd.DataFrame) -> pd
         on="user_id",
         suffixes=("_before", "_after"),
     )
-
-    movement = (
+    return (
         merged.groupby(["segment_label_before", "segment_label_after"], as_index=False)
         .agg(users=("user_id", "count"))
         .rename(columns={"segment_label_before": "from_segment", "segment_label_after": "to_segment"})
         .sort_values(["users", "from_segment", "to_segment"], ascending=[False, True, True])
     )
-
-    return movement
 
 
 def seller_ranking(sellers_df: pd.DataFrame) -> pd.DataFrame:
@@ -176,44 +170,144 @@ def seller_ranking(sellers_df: pd.DataFrame) -> pd.DataFrame:
     )
     ranked = ranked.sort_values(["risk_score", "margin_contribution"], ascending=[False, True]).reset_index(drop=True)
     ranked["impact_rank"] = ranked.index + 1
-    return ranked[
-        [
-            "impact_rank",
-            "seller_name",
-            "seller_segment",
-            "gmv_last_30d",
-            "return_rate_last_30d",
-            "margin_contribution",
-            "avg_order_value",
-            "top_category",
-        ]
-    ]
+    return ranked
 
 
-def simulate_top_returner_intervention(
-    users_df: pd.DataFrame,
-    top_pct: int,
-    return_reduction_pct: int,
-    gmv_drop_pct: int,
-) -> dict[str, object]:
-    targeted_count = max(1, math.ceil(len(users_df) * top_pct / 100))
+def product_ranking(products_df: pd.DataFrame) -> pd.DataFrame:
+    ranked = products_df.copy()
+    ranked["impact_score"] = ranked["promotion_score"] - ranked["return_rate"] * 60 + ranked["margin_contribution"] / 12
+    return ranked.sort_values(["impact_score", "margin_contribution"], ascending=[False, False]).reset_index(drop=True)
+
+
+def category_overview(categories_df: pd.DataFrame) -> pd.DataFrame:
+    categories = categories_df.copy()
+    categories["health"] = categories.apply(
+        lambda row: category_health_badge(row["return_rate_last_30d"], row["contribution_per_order"]),
+        axis=1,
+    )
+    return categories.sort_values(["health", "margin_contribution", "return_rate_last_30d"], ascending=[True, True, False])
+
+
+def category_detail(category_id: str, categories_df: pd.DataFrame, products_df: pd.DataFrame, sellers_df: pd.DataFrame) -> dict[str, pd.DataFrame | dict]:
+    category_row = categories_df.loc[categories_df["category_id"] == category_id].iloc[0].to_dict()
+    products = product_ranking(products_df.loc[products_df["category_id"] == category_id])
+    seller_ids = products["seller_id"].unique().tolist()
+    sellers = seller_ranking(sellers_df.loc[sellers_df["seller_id"].isin(seller_ids)])
+    return {
+        "summary": category_row,
+        "products": products,
+        "sellers": sellers,
+    }
+
+
+def top_destroyers(products_df: pd.DataFrame, sellers_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    product_destroyers = products_df.sort_values(["margin_contribution", "return_rate"], ascending=[True, False]).head(5)
+    seller_destroyers = sellers_df.sort_values(["margin_contribution", "return_rate_last_30d"], ascending=[True, False]).head(5)
+    return product_destroyers, seller_destroyers
+
+
+def top_protectors(products_df: pd.DataFrame, sellers_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    product_protectors = products_df.sort_values(["margin_contribution", "promotion_score"], ascending=[False, False]).head(5)
+    seller_protectors = sellers_df.sort_values(["margin_contribution", "gmv_last_30d"], ascending=[False, False]).head(5)
+    return product_protectors, seller_protectors
+
+
+def _targeted_count(size: int, pct: int) -> int:
+    return max(1, math.ceil(size * pct / 100))
+
+
+def simulate_soft_penalty(users_df: pd.DataFrame, top_pct: int, return_reduction_pct: int, gmv_drag_pct: int) -> dict[str, object]:
     targeted = users_df.sort_values(
-        ["return_cost_last_30d", "return_rate_last_30d", "gmv_last_30d"],
+        ["quarter_returns_count", "return_cost_last_30d", "return_rate_last_30d"],
         ascending=[False, False, False],
-    ).head(targeted_count)
-
+    ).head(_targeted_count(len(users_df), top_pct))
     return_savings = float(targeted["return_cost_last_30d"].sum()) * (return_reduction_pct / 100)
-    gmv_delta = -float(targeted["gmv_last_30d"].sum()) * (gmv_drop_pct / 100)
+    gmv_delta = -float(targeted["gmv_last_30d"].sum()) * (gmv_drag_pct / 100)
     lost_commission = abs(gmv_delta) * 0.22
     margin_delta = return_savings - lost_commission
-
     return {
-        "affected_users": targeted_count,
+        "label": INTERVENTION_CONFIG["soft_penalty_high_returners"]["label"],
+        "affected_users": int(len(targeted)),
         "delta_margin": round(margin_delta, 1),
         "delta_gmv": round(gmv_delta, 1),
         "return_cost_saved": round(return_savings, 1),
         "lost_commission": round(lost_commission, 1),
-        "targeted_users": targeted[
-            ["user_name", "segment_label", "gmv_last_30d", "return_rate_last_30d", "return_cost_last_30d"]
+        "targeted_entities": targeted[
+            ["user_name", "segment_label", "quarter_returns_count", "gmv_last_30d", "return_rate_last_30d", "return_cost_last_30d"]
         ].reset_index(drop=True),
+    }
+
+
+def simulate_dynamic_commission(sellers_df: pd.DataFrame, top_pct: int, uplift_pp: int, gmv_drag_pct: int) -> dict[str, object]:
+    targeted = sellers_df.sort_values(
+        ["return_rate_last_30d", "gmv_last_30d"], ascending=[False, False]
+    ).head(_targeted_count(len(sellers_df), top_pct))
+    commission_gain = float(targeted["gmv_last_30d"].sum()) * (uplift_pp / 100)
+    gmv_delta = -float(targeted["gmv_last_30d"].sum()) * (gmv_drag_pct / 100)
+    seller_retention_cost = abs(gmv_delta) * 0.15
+    margin_delta = commission_gain - seller_retention_cost
+    return {
+        "label": INTERVENTION_CONFIG["dynamic_commission_high_return_sellers"]["label"],
+        "affected_sellers": int(len(targeted)),
+        "delta_margin": round(margin_delta, 1),
+        "delta_gmv": round(gmv_delta, 1),
+        "return_cost_saved": round(commission_gain, 1),
+        "lost_commission": round(seller_retention_cost, 1),
+        "targeted_entities": targeted[
+            ["seller_name", "seller_segment", "effective_commission_rate", "gmv_last_30d", "return_rate_last_30d", "margin_contribution"]
+        ].reset_index(drop=True),
+    }
+
+
+def simulate_product_promotion(products_df: pd.DataFrame, top_pct: int, gmv_uplift_pct: int, conversion_uplift_pct: int) -> dict[str, object]:
+    targeted = product_ranking(products_df).head(_targeted_count(len(products_df), top_pct))
+    base_gmv = float((targeted["avg_price"] * targeted["orders"]).sum())
+    gmv_delta = base_gmv * (gmv_uplift_pct / 100)
+    margin_ratio = float(targeted["margin_contribution"].sum() / max(base_gmv, 1))
+    conversion_bonus = float(targeted["margin_contribution"].sum()) * (conversion_uplift_pct / 1000)
+    margin_delta = gmv_delta * max(margin_ratio, 0.08) + conversion_bonus
+    return {
+        "label": INTERVENTION_CONFIG["promote_low_return_products"]["label"],
+        "affected_products": int(len(targeted)),
+        "delta_margin": round(margin_delta, 1),
+        "delta_gmv": round(gmv_delta, 1),
+        "return_cost_saved": round(conversion_bonus, 1),
+        "lost_commission": 0.0,
+        "targeted_entities": targeted[
+            ["product_name", "product_segment", "promotion_score", "orders", "return_rate", "margin_contribution"]
+        ].reset_index(drop=True),
+    }
+
+
+def scenario_summary(scenarios_df: pd.DataFrame) -> pd.DataFrame:
+    return scenarios_df.sort_values(["delta_margin", "delta_gmv"], ascending=[False, False]).reset_index(drop=True)
+
+
+def category_change(previous_df: pd.DataFrame, current_df: pd.DataFrame) -> pd.DataFrame:
+    if previous_df.empty:
+        return pd.DataFrame(columns=["category_name", "gmv_delta", "margin_delta", "return_rate_delta"])
+
+    merged = current_df.merge(
+        previous_df[["category_id", "gmv_last_30d", "margin_contribution", "return_rate_last_30d"]],
+        on="category_id",
+        suffixes=("_current", "_previous"),
+    )
+    merged["gmv_delta"] = merged["gmv_last_30d_current"] - merged["gmv_last_30d_previous"]
+    merged["margin_delta"] = merged["margin_contribution_current"] - merged["margin_contribution_previous"]
+    merged["return_rate_delta"] = merged["return_rate_last_30d_current"] - merged["return_rate_last_30d_previous"]
+    return merged[
+        ["category_name", "gmv_delta", "margin_delta", "return_rate_delta"]
+    ].sort_values(["margin_delta", "return_rate_delta"], ascending=[True, False])
+
+
+def category_health_copy(row: dict | pd.Series) -> str:
+    return category_health_badge(row["return_rate_last_30d"], row["contribution_per_order"])
+
+
+def category_threshold_summary() -> dict[str, float]:
+    return {
+        "healthy_return_rate_max": CATEGORY_THRESHOLDS.healthy_return_rate_max,
+        "warning_return_rate_max": CATEGORY_THRESHOLDS.warning_return_rate_max,
+        "healthy_margin_per_order_min": CATEGORY_THRESHOLDS.healthy_margin_per_order_min,
+        "warning_margin_per_order_min": CATEGORY_THRESHOLDS.warning_margin_per_order_min,
     }

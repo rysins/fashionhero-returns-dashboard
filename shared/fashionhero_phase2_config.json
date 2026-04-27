@@ -1,0 +1,49 @@
+{
+  "user_thresholds": {
+    "toxic_return_rate": 0.55,
+    "toxic_margin_per_order": 0.0,
+    "high_value_gmv": 900.0,
+    "high_value_return_rate": 0.2,
+    "high_value_margin_per_order": 25.0,
+    "tryer_orders_max": 2,
+    "tryer_return_rate": 0.25
+  },
+  "seller_thresholds": {
+    "risky_return_rate": 0.5,
+    "warning_return_rate": 0.35,
+    "risky_margin_contribution": 0.0,
+    "warning_margin_contribution": 75.0
+  },
+  "category_thresholds": {
+    "healthy_return_rate_max": 0.28,
+    "warning_return_rate_max": 0.4,
+    "healthy_margin_per_order_min": 20.0,
+    "warning_margin_per_order_min": 8.0
+  },
+  "interventions": {
+    "soft_penalty_high_returners": {
+      "label": "Soft penalty for high returners",
+      "target_type": "user",
+      "top_pct": 10,
+      "free_returns_per_quarter": 2,
+      "return_cost_reduction_pct": 18,
+      "gmv_drag_pct": 4,
+      "return_shipping_cost": 14.0
+    },
+    "dynamic_commission_high_return_sellers": {
+      "label": "Dynamic commission for risky sellers",
+      "target_type": "seller",
+      "top_pct": 20,
+      "commission_uplift_pp": 3,
+      "seller_gmv_drag_pct": 2
+    },
+    "promote_low_return_products": {
+      "label": "Promote low-return products",
+      "target_type": "product",
+      "top_pct": 25,
+      "gmv_uplift_pct": 5,
+      "conversion_uplift_pct": 8,
+      "return_rate_guardrail": 0.22
+    }
+  }
+}

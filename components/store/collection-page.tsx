@@ -4,15 +4,29 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/store/product-card";
-import { ProductFilters, SortOption, filterProducts, getFilterOptions, sortProducts } from "@/lib/data/selectors";
+import { useStore } from "@/components/store/store-provider";
+import { sellers } from "@/lib/data/mock-data";
+import { getCategoryAggregate } from "@/lib/data/preview-data";
+import { ProductFilters, SortOption, filterProducts, getFilterOptions, rankProductsForScenario, sortProducts } from "@/lib/data/selectors";
 import { Collection, Product } from "@/lib/data/types";
 
 export function CollectionPage({ collection, products }: { collection: Collection; products: Product[] }) {
   const [filters, setFilters] = useState<ProductFilters>({ gender: "All" });
   const [sort, setSort] = useState<SortOption>("featured");
+  const { scenario } = useStore();
 
   const filterOptions = useMemo(() => getFilterOptions(products), [products]);
-  const filteredProducts = useMemo(() => sortProducts(filterProducts(products, filters), sort), [filters, products, sort]);
+  const filteredProducts = useMemo(() => {
+    const baseProducts = sort === "featured" ? rankProductsForScenario(filterProducts(products, filters), scenario) : sortProducts(filterProducts(products, filters), sort);
+    return baseProducts;
+  }, [filters, products, scenario, sort]);
+  const categoryHeadline = useMemo(() => {
+    const categoryNames = Array.from(new Set(products.map((product) => product.category)));
+    if (categoryNames.length !== 1) {
+      return null;
+    }
+    return getCategoryAggregate(products, sellers, categoryNames[0]);
+  }, [products]);
 
   return (
     <main>
@@ -156,6 +170,11 @@ export function CollectionPage({ collection, products }: { collection: Collectio
               <div>
                 <h2 className="text-2xl font-light text-charcoal">{collection.name}</h2>
                 <p className="text-sm text-warm-gray">{filteredProducts.length} products</p>
+                {scenario.promoteLowReturnProductsEnabled && categoryHeadline ? (
+                  <p className="mt-2 max-w-2xl rounded-full bg-[#e7f5ec] px-4 py-2 text-xs uppercase tracking-[0.5px] text-[#2f7d4a]">
+                    Preview ranking is promoting low-return products in {categoryHeadline.categoryName}. Estimated return rate {Math.round(categoryHeadline.returnRateLast30d * 100)}%.
+                  </p>
+                ) : null}
               </div>
               <label className="text-sm text-warm-gray">
                 Sort

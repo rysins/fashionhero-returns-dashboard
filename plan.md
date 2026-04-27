@@ -94,7 +94,9 @@ Zbudować nową aplikację `Next.js` w tym repo jako wierną wizualnie kopię ob
 - 2026-04-27: local verification completed for the dashboard through `python -m dashboard.validate_dashboard` and a successful `streamlit run dashboard/app.py`.
 - 2026-04-27: migrated dashboard runtime data to SQLite and added deterministic synthetic user transaction generation consistent with the seeded mock datasets.
 - 2026-04-27: fixed Streamlit Community Cloud startup by bootstrapping repo root into `sys.path` in `dashboard/app.py`, so absolute imports like `from dashboard...` resolve when the app is launched as `dashboard/app.py`.
-- Next step: deploy the Streamlit dashboard from `dashboard/app.py` to Streamlit Community Cloud and keep the storefront on Vercel.
+- 2026-04-27: phase 2 implemented with dashboard drill-down by category, scenario outputs, shared intervention config, storefront preview scenarios and a GitHub Actions daily refresh pipeline based on CSV imports.
+- 2026-04-27: added an operational runbook for replacing demo seeds with real FashionHero CSV exports in `dashboard/REAL_EXPORTS.md`, including required files, column contracts, manual refresh flow and GitHub Actions handoff.
+- Next step: replace seed CSVs with real FashionHero exports and verify the scheduled refresh against live-shaped data.
 
 ## Dashboard MVP Plan
 
@@ -124,3 +126,23 @@ Zbudować nową aplikację `Next.js` w tym repo jako wierną wizualnie kopię ob
 - Streamlit entrypoint: `dashboard/app.py`
 - Dependency file: `dashboard/requirements.txt`
 - Sharing mode: internal demo/share link on Streamlit Community Cloud
+- Daily refresh path: `CSV export -> dashboard.pipeline -> SQLite runtime DB -> Streamlit`
+- Scheduler: `.github/workflows/dashboard-refresh.yml`
+
+## Phase 2 Decisions
+
+### Data Flow
+- Real-data v1 is planned around daily CSV exports, not direct read-only SQL.
+- The dashboard reads only from the generated runtime SQLite database.
+- Pipeline outputs now include:
+  - `category_agg_daily`
+  - `scenario_outputs_daily`
+  - `pipeline_manifest.json`
+
+### Storefront Preview
+- Preview interventions are simulation-only and do not apply production consequences.
+- Shared scenario configuration lives in `shared/fashionhero_phase2_config.json`.
+- Storefront preview covers:
+  - `soft_penalty_high_returners`
+  - `dynamic_commission_high_return_sellers`
+  - `promote_low_return_products`
