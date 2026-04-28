@@ -1,6 +1,6 @@
 {
   "snapshot_date": "2026-04-27",
-  "source_dir": "/Users/marcin/Documents/Codex_projects/FashionHero/dashboard/seeds",
+  "source_dir": "/home/runner/work/fashionhero-returns-dashboard/fashionhero-returns-dashboard/dashboard/seeds",
   "validation_status": "passed",
   "record_counts": {
     "orders_fact": 108,
